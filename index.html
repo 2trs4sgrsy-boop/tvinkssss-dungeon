@@ -307,6 +307,12 @@ input{min-height:44px;padding:8px 12px}
 .t2 #party.big .pm .row,.t3 #party.big .pm .row{display:none}.t2 #party.big .pm .av,.t3 #party.big .pm .av{width:20px;height:20px}#party.big .pm .av em{display:none}
 @media (orientation:landscape) and (max-height:600px){body:has(#party.big) #feedW{display:none}#party.big .pm .row{display:none}#party.big .pm .av{width:20px;height:20px}#party.big{gap:2px}}
 @media (orientation:landscape) and (max-height:600px){body:has(#party.big) .t2 #react,body.t2:has(#party.big) #react,body.t3:has(#party.big) #react,body.t2:has(#party.big) .react,body.t3:has(#party.big) .react{display:none}}
+.av{background-size:300% auto!important;background-position:calc((var(--fx,.5)*3 - .5)/2*100%) calc((var(--fy,.24)*3.9 - .45)/2.9*100%)!important;background-repeat:no-repeat}
+.slot{background-size:cover;background-position:calc(var(--fx,.5)*100%) 0;background-repeat:no-repeat}
+.slots.s8 .slot,.slots.s10 .slot{background-size:150% auto!important;background-position:calc((var(--fx,.5)*1.5 - .5)/.5*100%) calc((var(--fy,.24)*1.95 - .2)/1.44*100%)!important}
+.ghelp p{margin:0 0 5px;font-size:clamp(10px,1.6vh,14px);line-height:1.25}
+@media (orientation:landscape) and (max-height:500px){.ghelp{columns:2;column-gap:12px}.ghelp p{break-inside:avoid;font-size:10.5px}#modal .box:has(.ghelp){max-width:96vw}#modal .box:has(.ghelp) h2{margin:0 0 3px;font-size:16px}.ghelp p{margin-bottom:3px}#modal .box:has(.ghelp) .btn{padding:6px;min-height:0}}
+@media (max-width:359px){#b-help{display:none}}.ghelp .sub{font-size:.9em}
 </style><link rel="preload" as="image" href="assets/art/bg_crypt.webp"><link rel="preload" as="image" href="assets/art/mob1_ghoul.webp"></head><body><div id="app"></div><div id="modal"><div class="box"><button class="x" onclick="closeModal()" aria-label="Закрыть">✕</button><div id="mbody"></div></div></div><div id="toast"></div><div id="bgArt"></div><div id="vfx"></div>
 <script>window.__OFFLINE__=true;window.HIRES=true;window.ASSET_BASE='assets/';</script><script>// TVINKSSSS — кооп-подземелье v2. Авторитетный движок забега (общий для Node-сервера и офлайн-HTML).
 // Ни одна механика не требует одновременных нажатий: всё через окна действий, итог считается при закрытии окна.
@@ -314,9 +320,9 @@ input{min-height:44px;padding:8px 12px}
 'use strict';
 // уровни подземелья: размер пачки, сложность, длина, шанс мифика с финального босса (божественное — не меняется)
 const TIERS = {
-  normal: { name: 'Обычное подземелье', i: '🗝️', min: 2, max: 4, hp: 1, atk: 1, rooms: 5, myth: 1 },
-  raid: { name: 'Серьёзный рейд', i: '⚔️', min: 4, max: 8, hp: 1.5, atk: 1.3, rooms: 7, myth: 1 },
-  world: { name: 'Мировой рейд', i: '🌍', min: 8, max: 10, hp: 1.8, atk: 1.5, rooms: 8, myth: 1.5 },
+  normal: { name: 'Обычное подземелье', i: '🗝️', min: 2, max: 4, hp: 1, atk: 1, rooms: 5, myth: 1, loot: 1 },
+  raid: { name: 'Серьёзный рейд', i: '⚔️', min: 4, max: 8, hp: 1.5, atk: 1.3, rooms: 7, myth: 1, loot: 1.25 },
+  world: { name: 'Мировой рейд', i: '🌍', min: 8, max: 10, hp: 1.8, atk: 1.5, rooms: 8, myth: 1.5, loot: 1.5 },
 };
 const DEFAULT_CFG = { enforceMin: false, allowBots: false, botSkill: 1,
   rooms: 5,               // число комнат до босса (4-5)
@@ -326,7 +332,9 @@ const DEFAULT_CFG = { enforceMin: false, allowBots: false, botSkill: 1,
   bossRageMs: 360000,     // таймер ярости босса (вайп пачки)
   mythicOnKill: 1.0,      // шанс мифика КАЖДОМУ при убийстве босса
   mythicOnReach: 0.0,     // шанс мифика каждому, если дошли до босса, но не убили (0 = только за убийство)
-  divineChance: 0.12,     // шанс божественного предмета (одному случайному участнику) при убийстве босса
+  divineChance: null,     // null = из реальной таблицы: 0.01% × BOSS_MUL.divine; число = переопределение
+  catalog: null,          // { dropRates, items:[{id,name,type,rarity,cls,slot,icon,...}] } — adapter.getItemCatalog(); null = DUNGEON_CATALOG (демо)
+  luckCap: 0.5,           // потолок бонуса удачи (+50% к весам rare+)
   tapCapPerSec: 12,       // антиспам: макс. тапов/с, лишнее сервер отбрасывает
   tickMs: 100,
 };
@@ -379,9 +387,23 @@ const PATHS = { chest: { name: 'Сундук', icon: '🧰', d: 'бой + лут
   mimic: { name: 'Сундук?', icon: '🎁', d: 'подозрительно красивый сундук' }, cursed: { name: 'Проклятый сундук', icon: '⚰️', d: 'проклятие за жирный лут — голосуем' }, gamble: { name: 'Игрок-скелет', icon: '🎲', d: 'ставка: удвоить или потерять' },
   trap: { name: 'Коридор ловушек', icon: '🪤', d: 'успей увернуться' }, goblin: { name: 'Гоблин-казначей', icon: '💰', d: 'убегает за 15 с — лови!' }, wheel: { name: 'Колесо фортуны', icon: '🎡', d: 'случайный бафф… или нет' },
   prisoner: { name: 'Пленник', icon: '⛓️', d: 'спаси — поможет в бою' }, portal: { name: 'Портал', icon: '🌀', d: 'пропустить комнату, босс злее' }, bonfire: { name: 'Костёр', icon: '🔥', d: 'отдых: лечение и сила' }, echo: { name: 'Эхо павшего героя', icon: '👻', d: 'мини-босс, редкий дроп' } };
+// ===== ДРОП. База = РЕАЛЬНЫЕ шансы из таблицы игры (equipment_db.xlsx, лист «Редкости»):
+// обычная 60%, необычная 25%, редкая 10%, эпическая 4%, легендарная 0.9%, мифическая 0.09%, божественная 0.01%.
+// Источник (сундук/элитка/…) умножает веса редких+; уровень подземелья (T().loot) — эпик/легу; удача игрока — rare+ (до luckCap).
+const REAL_RATES = { common: 60, uncommon: 25, rare: 10, epic: 4, legendary: .9, mythic: .09, divine: .01 };
+const REG = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+const SRC_MUL = { small: [1, 1, .5, .5, .5], junk: [1, 1, 0, 0, 0], chest: [1, 1, 1, 1, 1], goblin: [1, 1, 2, 2, 3], elite: [.5, 1, 2, 3, 4],
+  cursed: [.3, 1, 2.5, 4, 6], secret: [0, .5, 3, 5, 8], mimic: [0, .5, 3, 5, 8], echo: [0, .5, 3, 5, 8] };
+const SRC_NAME = { chest: 'Сундук комнаты / обычные мобы', elite: 'Элитка', cursed: 'Проклятый сундук', secret: 'Секретный сундук, мимик, эхо', small: 'Мелкие находки' };
+const BOSS_MUL = { mythic: 500, divine: 300 }; // финальный босс: 0.09%×500 = 45% мифик каждому; 0.01%×300 = 3% божественный одному
+const DIVINE_CAP = 1.3; // божественный: удача пачки максимум ×1.3 от базы (остаётся редким)
+// удача из сейва: lootPct = «Шанс добычи» героя (%) → бонус b = min(luckCap, lootPct/100)
+function luckB(p, cap) { const l = p && p.luck ? +p.luck || 0 : 0; return Math.max(0, Math.min(cap == null ? .5 : cap, l / 100)); }
+function lootTable(src, opt) { opt = opt || {}; const R = opt.rates || REAL_RATES, m = typeof src === 'object' ? src : SRC_MUL[src] || SRC_MUL.chest, tl = opt.tier || 1, b = opt.b || 0, o = {};
+  REG.forEach((r, i) => { let w = R[r] * m[i]; if (i >= 2) w *= 1 + b; if (i >= 3) w *= tl; if (w > 0) o[r] = w; }); return o; }
+function pct(T) { const t = Object.values(T).reduce((a, b) => a + b, 0), o = {}; for (const k in T) o[k] = Math.round(T[k] / t * 1e4) / 100; return o; }
 // таблицы весов редкости: один бросок на дроп для всей пачки (у всех одинаковая редкость/ценность)
-const LOOT_T = { chest: { common: 25, uncommon: 35, rare: 28, epic: 10, legendary: 2 }, elite: { uncommon: 20, rare: 40, epic: 30, legendary: 10 }, secret: { rare: 30, epic: 50, legendary: 20 }, cursed: { uncommon: 22, rare: 35, epic: 28, legendary: 15 },
-  mimic: { rare: 30, epic: 45, legendary: 25 }, echo: { rare: 35, epic: 45, legendary: 20 }, goblin: { uncommon: 25, rare: 45, epic: 25, legendary: 5 }, small: { common: 55, uncommon: 35, rare: 10 }, junk: { common: 80, uncommon: 20 } };
+const LOOT_T = Object.fromEntries(Object.keys(SRC_MUL).map(k => [k, lootTable(k)])); // базовые веса (без удачи/уровня) — для совместимости
 const ITYPES = { weapon: 'Оружие', armor: 'Броня', accessory: 'Аксессуар', gem: 'Самоцвет', material: 'Материал', gold: 'Золото' };
 const ITYPE_W = { weapon: 22, armor: 22, accessory: 18, gem: 14, material: 14, gold: 10 };
 const TYPE_NAMES = { gem: ['Рубин', 'Сапфир', 'Изумруд', 'Аметист'], material: ['Эссенция', 'Костяная пыль', 'Слиток', 'Эктоплазма'], accessory: ['Кольцо', 'Амулет', 'Серьга', 'Талисман'], gold: ['Мешочек золота', 'Кубок', 'Слиток золота'] };
@@ -434,11 +456,11 @@ class Run {
   ev(text, kind = 'info') { this.events.push({ id: this.t + ':' + this.events.length, t: this.t, text, kind }); if (this.events.length > 30) this.events.shift(); }
 
   // ---------- игроки ----------
-  addPlayer({ name, cls, bot = false, ext = null, token = null, skin = null }) {
+  addPlayer({ name, cls, bot = false, ext = null, token = null, skin = null, luck = null }) {
     if (this.players.length >= TIERS[this.tier].max) return null;
     if (this.phase !== 'lobby') return null;
     const c = CLASSES[cls] ? cls : 'warrior';
-    const p = { id: this.nid++, token: token || Math.random().toString(36).slice(2), name: String(name || 'Герой').slice(0, 16), cls: c, bot, fillBot: bot, ext,
+    const p = { id: this.nid++, token: token || Math.random().toString(36).slice(2), name: String(name || 'Герой').slice(0, 16), cls: c, bot, fillBot: bot, ext, luck: Math.max(0, Math.min(500, +(luck != null ? luck : ext && ext.luck) || 0)),
       skin: null, cd2At: 0, belt: [], potAt: 0, lready: !!bot, level: Math.max(1, Math.min(999, (ext && ext.level) | 0 || 1)), lastReact: -1e9, connected: !bot, hp: CLASSES[c].hp, maxHp: CLASSES[c].hp, downUntil: 0, cards: [], dmgMul: 1, gold: 0, role: null, bank: 0, tapsWin: 0,
       cdAt: 0, buff: {}, vote: null, offer: null, rune: null, runePick: null, react: null,
       st: { abil: 0, dmg: 0, heal: 0, shield: 0, saves: 0, taps: 0, runeOk: 0, chargeOk: 0, deaths: 0, mobs: 0, rattle: 0 } };
@@ -635,7 +657,7 @@ class Run {
     if (f.helper && !f.boss) f.hp -= f.maxHp * .006 * dt / 1000; // спасённый пленник помогает
     if (f.hp <= 0) return this.fightWon();
     if (this.alive().length === 0) { if (this.canRevive()) return this.revive(); return this.finish(false, 'Пачка пала'); }
-    if (f.kind === 'goblin' && this.t >= f.rageAt) { this.ev('💰 Гоблин удрал с мешком! Пачке достались крохи', 'bad'); f.mech = null; this.grantRegular(this.roll('junk'), 'Обронил гоблин'); this.potionDrop(.5, 'Гоблин обронил'); return this.toCards(); }
+    if (f.kind === 'goblin' && this.t >= f.rageAt) { this.ev('💰 Гоблин удрал с мешком! Пачке достались крохи', 'bad'); f.mech = null; this.grantRegular('junk', 'Обронил гоблин'); this.potionDrop(.5, 'Гоблин обронил'); return this.toCards(); }
     if (this.t >= f.rageAt) { this.players.forEach(p => { p.hp = 0; }); this.ev(f.boss ? '👑 ЯРОСТЬ ЛИЧА! Пачка стёрта в прах' : '💢 Ярость врага! Пачку смело', 'bad'); return this.finish(false, 'Таймер ярости'); }
   }
   fightWon() {
@@ -643,10 +665,10 @@ class Run {
     const goldBase = f.boss ? 0 : { elite: 40, mimic: 45, goblin: 90, echo: 50 }[f.kind] || 25;
     this.players.forEach(p => { p.gold += Math.round(goldBase * (this.has(p, 'greed') ? 1.5 : 1)); });
     if (f.boss) { this.bossKilled = true; this.ev('👑 Король-Лич повержен!', 'big'); return this.finish(true, 'Босс убит'); }
-    this.grantRegular(this.roll(LOOT_T[f.kind] ? f.kind : 'chest'), { chest: 'Сундук комнаты', elite: 'Элитка', mimic: 'Нутро мимика', goblin: 'Мешок гоблина', echo: 'Эхо павшего героя' }[f.kind] || 'Сундук комнаты');
+    this.grantRegular(SRC_MUL[f.kind] ? f.kind : 'chest', { chest: 'Сундук комнаты', elite: 'Элитка', mimic: 'Нутро мимика', goblin: 'Мешок гоблина', echo: 'Эхо павшего героя' }[f.kind] || 'Сундук комнаты');
     if (f.kind === 'echo') { this.addFavor(15, 'эхо героя упокоено'); }
     this.potionDrop({ chest: .4, elite: .65, mimic: .8, goblin: 1, echo: .7 }[f.kind] || .4, 'Трофей');
-    if (this.players.some(p => p.cls === 'assassin') && this.rng() < .15) { this.grantRegular(this.roll('small'), 'Тайник Ассасина'); this.ev('🗡️ Ассасин нашёл тайник: каждому по вещи', 'good'); }
+    if (this.players.some(p => p.cls === 'assassin') && this.rng() < .15) { this.grantRegular('small', 'Тайник Ассасина'); this.ev('🗡️ Ассасин нашёл тайник: каждому по вещи', 'good'); }
     this.ev(`Победа над «${f.name}»!`, 'good'); this.toCards();
   }
 
@@ -655,8 +677,8 @@ class Run {
     kind = kind || this.pick(['shrine', 'runeDoor', 'fountain']); this.mod = 'none';
     this.phase = 'event'; this.evt = { kind, picks: {} }; this.fight = null; this.until = this.t + 3500; const E = this.evt;
     this.players.forEach(p => { p.evPick = null; });
-    if (kind === 'fountain') { this.players.forEach(p => { if (!p.downUntil) p.hp = p.maxHp; }); E.text = 'Фонтан жизни: пачка полностью вылечена'; this.potionDrop(.6, 'Фонтан'); this.grantRegular(this.roll('small'), 'Находка у фонтана'); }
-    if (kind === 'shrine') { this.players.forEach(p => p.dmgMul += .1); E.text = 'Алтарь войны зажжён: +10% урона всем, боги довольны'; this.addFavor(15, 'алтарь'); this.grantRegular(this.roll('small'), 'Подношение алтаря'); }
+    if (kind === 'fountain') { this.players.forEach(p => { if (!p.downUntil) p.hp = p.maxHp; }); E.text = 'Фонтан жизни: пачка полностью вылечена'; this.potionDrop(.6, 'Фонтан'); this.grantRegular('small', 'Находка у фонтана'); }
+    if (kind === 'shrine') { this.players.forEach(p => p.dmgMul += .1); E.text = 'Алтарь войны зажжён: +10% урона всем, боги довольны'; this.addFavor(15, 'алтарь'); this.grantRegular('small', 'Подношение алтаря'); }
     if (kind === 'runeDoor') { E.text = 'Тайная дверь: у каждого своя руна. Все верно → секретный сундук'; this.teamTasks.total++;
       this.act().forEach(p => { p.rune = this.pick(RUNES); p.runePick = null; p.runeOrder = this.shuffle(RUNES); }); this.until = this.t + this.cfg.runeMs; }
     if (kind === 'cursed') { E.text = 'Проклятый сундук шепчет… Открыть? Лут на тир выше (самоцветы и материалы ×2), но следующая комната — под случайным проклятием. Решает большинство'; E.opts = [['yes', '⚰️ Открыть'], ['no', '🚶 Мимо']]; this.until = this.t + 7000; }
@@ -665,22 +687,22 @@ class Run {
     if (kind === 'wheel') { const W = [['dmg', '+15% урона всем'], ['heal', 'полное лечение'], ['gold', '+40 золота каждому'], ['loot', 'по вещи каждому'], ['hurt', '-25% HP всем'], ['tough', 'следующий враг +20% HP'], ['favor', 'милость богов +25']]; const w = this.pick(W); E.res = w[0];
       E.text = '🎡 Колесо крутится… выпало: ' + w[1];
       if (w[0] === 'dmg') this.players.forEach(p => p.dmgMul += .15); if (w[0] === 'heal') this.players.forEach(p => { if (!p.downUntil) p.hp = p.maxHp; });
-      if (w[0] === 'gold') this.players.forEach(p => p.gold += 40); if (w[0] === 'loot') this.grantRegular(this.roll('chest'), 'Колесо фортуны');
+      if (w[0] === 'gold') this.players.forEach(p => p.gold += 40); if (w[0] === 'loot') this.grantRegular('chest', 'Колесо фортуны');
       if (w[0] === 'hurt') this.players.forEach(p => p.hp = Math.max(1, p.hp - p.maxHp * .25)); if (w[0] === 'tough') this.nextHpMul = 1.2; if (w[0] === 'favor') this.addFavor(25, 'колесо'); this.until = this.t + 4000; }
     if (kind === 'prisoner') { E.text = 'Пленник в цепях! Все жмите «Освободить» — он поможет в следующем бою'; E.opts = [['free', '⛓️ Освободить']]; this.teamTasks.total++; this.until = this.t + 6000; }
-    if (kind === 'portal') { E.text = 'Портал: пачка проскакивает комнату, но Король-Лич станет крепче (+8% HP)'; this.bossHpMul *= 1.08; this.room++; this.grantRegular(this.roll('small'), 'Добыча у портала'); }
+    if (kind === 'portal') { E.text = 'Портал: пачка проскакивает комнату, но Король-Лич станет крепче (+8% HP)'; this.bossHpMul *= 1.08; this.room++; this.grantRegular('small', 'Добыча у портала'); }
     if (kind === 'bonfire') { E.text = 'Костёр: отдых. Выбери — лечение пачке или +8% к своему урону'; E.opts = [['heal', '❤️ Лечить пачку'], ['power', '⚔️ Сила']]; this.addFavor(10, 'костёр'); this.until = this.t + 6000; }
     this.ev(PATHS[kind] ? PATHS[kind].icon + ' ' + E.text : '❓ ' + E.text);
   }
   evDone() { const E = this.evt, A = this.act(); if (E.kind === 'runeDoor') return A.every(p => p.runePick); if (!E.opts) return false; return A.every(p => p.evPick); }
   endEvent() { const E = this.evt, P = this.act().length ? this.act() : this.players;
     if (E.kind === 'runeDoor') { const ok = P.every(p => p.runePick === p.rune); P.forEach(p => { if (p.runePick === p.rune) p.st.runeOk++; p.rune = null; });
-      if (ok) { this.teamTasks.done++; this.addFavor(20, 'тайная дверь'); this.grantRegular(this.roll('secret'), 'Секретный сундук'); this.ev('🚪 Дверь открылась: секретный сундук!', 'good'); } else { this.grantRegular(this.roll('junk'), 'Обломки у двери'); this.ev('🚪 Дверь не поддалась…', 'bad'); } }
+      if (ok) { this.teamTasks.done++; this.addFavor(20, 'тайная дверь'); this.grantRegular('secret', 'Секретный сундук'); this.ev('🚪 Дверь открылась: секретный сундук!', 'good'); } else { this.grantRegular('junk', 'Обломки у двери'); this.ev('🚪 Дверь не поддалась…', 'bad'); } }
     if (E.kind === 'cursed') { const y = P.filter(p => p.evPick === 'yes').length, nn = P.filter(p => p.evPick === 'no').length;
-      if (y > nn) { this.curse = this.pick(Object.keys(CURSES)); this.grantRegular(this.roll('cursed'), 'Проклятый сундук', 2); this.ev('⚰️ Сундук открыт! Лут ваш, но до конца следующей комнаты: ' + CURSES[this.curse], 'warn'); } else this.ev('🚶 Пачка прошла мимо проклятого сундука'); }
+      if (y > nn) { this.curse = this.pick(Object.keys(CURSES)); this.grantRegular('cursed', 'Проклятый сундук', 2); this.ev('⚰️ Сундук открыт! Лут ваш, но до конца следующей комнаты: ' + CURSES[this.curse], 'warn'); } else this.ev('🚶 Пачка прошла мимо проклятого сундука'); }
     if (E.kind === 'gamble') for (const p of P) if (p.evPick === 'bet' && p.gold > 0) { const st = Math.ceil(p.gold / 2); if (this.rng() < .5) { p.gold += st; this.ev(`🎲 ${p.name} удвоил ставку: +${st}`, 'good'); } else { p.gold -= st; this.ev(`🎲 ${p.name} проиграл ${st}`, 'bad'); } }
     if (E.kind === 'trap') { const miss = P.filter(p => p.evPick !== 'dodge'); miss.forEach(p => { p.hp = Math.max(1, p.hp - p.maxHp * .3); });
-      if (!miss.length) { this.teamTasks.done++; this.addFavor(15, 'ловушки пройдены'); this.grantRegular(this.roll('small'), 'Тайник в коридоре'); this.ev('💨 Все увернулись!', 'good'); this.potionDrop(.5, 'Тайник'); } else this.ev(`🪤 Лезвия задели: ${miss.map(p => p.name).join(', ')}`, 'bad'); }
+      if (!miss.length) { this.teamTasks.done++; this.addFavor(15, 'ловушки пройдены'); this.grantRegular('small', 'Тайник в коридоре'); this.ev('💨 Все увернулись!', 'good'); this.potionDrop(.5, 'Тайник'); } else this.ev(`🪤 Лезвия задели: ${miss.map(p => p.name).join(', ')}`, 'bad'); }
     if (E.kind === 'prisoner') { const ok = P.every(p => p.evPick === 'free'); if (ok) { this.teamTasks.done++; this.helper = 1; this.addFavor(25, 'пленник спасён'); this.ev('⛓️ Пленник свободен и идёт с вами в бой!', 'good'); } else this.ev('⛓️ Цепи не поддались — пленник остался', 'bad'); }
     if (E.kind === 'bonfire') this.potionDrop(.5, 'У костра');
     if (E.kind === 'bonfire') for (const p of P) { if (p.evPick === 'power') p.dmgMul += .08; else P.forEach(q => this.heal(q, q.maxHp * .25 / P.length, p)); }
@@ -714,28 +736,48 @@ class Run {
     this.players.forEach(p => { if (p.downUntil) { p.downUntil = 0; p.hp = p.maxHp * .4; } if (this.act().length <= 2) p.hp = Math.max(p.hp, p.maxHp * .7); }); this.toVote(); }
 
   // ---------- лут (только на сервере) ----------
-  roll(t) { const T = typeof t === 'string' ? LOOT_T[t] : t, tot = Object.values(T).reduce((a, b) => a + b, 0); let x = this.rng() * tot; for (const k in T) { x -= T[k]; if (x < 0) return k; } return Object.keys(T).pop(); }
+  roll(t, u) { const T = typeof t === 'string' ? LOOT_T[t] : t, tot = Object.values(T).reduce((a, b) => a + b, 0); let x = (u == null ? this.rng() : u) * tot; for (const k in T) { x -= T[k]; if (x < 0) return k; } return Object.keys(T).pop(); }
   rollType() { return this.roll(ITYPE_W); }
+  // предмет из РЕАЛЬНОГО каталога игры: редкость и тип уже выброшены, берём существующий itemId (класс игрока или «все»)
   mkItem(p, rarity, src, type) { type = type || (rarity === 'mythic' || rarity === 'divine' ? this.pick(['weapon', 'armor', 'accessory']) : this.rollType());
-    const base = type === 'weapon' ? ITEM_NAMES[p.cls][0] : type === 'armor' ? this.pick(ITEM_NAMES[p.cls].slice(1)) : this.pick(TYPE_NAMES[type]);
-    return { id: this.runId + ':' + p.id + ':' + (this.lootByPlayer[p.id] || []).length, rarity, rarityName: RAR[rarity].name, value: RAR[rarity].v, type, typeName: ITYPES[type],
-    name: `${base} ${ADJ[rarity]}`, cls: p.cls, source: src }; }
+    const uid = this.runId + ':' + p.id + ':' + (this.lootByPlayer[p.id] || []).length, base = { uid, id: uid, rarity, rarityName: RAR[rarity].name, value: RAR[rarity].v, type, typeName: ITYPES[type], cls: p.cls, source: src };
+    if (type === 'gold' || type === 'material') return Object.assign(base, { itemId: type, name: type === 'gold' ? 'Золото' : 'Материалы', currency: true });
+    const C = this.catalog(), L = C && C.items || [];
+    if (L.length) { const fit = it => it.type === type && (it.cls === 'all' || it.cls === p.cls);
+      let c = L.filter(it => fit(it) && (it.rarity === rarity || it.rarity === '*'));
+      if (!c.length) c = L.filter(it => (it.rarity === rarity) && (it.cls === 'all' || it.cls === p.cls)); // нет такого типа этой редкости — любой слот
+      if (!c.length) { const ri = Object.keys(RAR).indexOf(rarity); for (let d = 1; d < 7 && !c.length; d++) c = L.filter(it => fit(it) && Math.abs(Object.keys(RAR).indexOf(it.rarity) - ri) === d); }
+      if (c.length) { const it = this.pick(c); return Object.assign(base, { itemId: it.id, name: it.name, slot: it.slot, icon: it.icon || null, level: it.level, stats: it.stats, itemRarity: it.rarity }); } }
+    const nm = type === 'weapon' ? ITEM_NAMES[p.cls][0] : type === 'armor' ? this.pick(ITEM_NAMES[p.cls].slice(1)) : this.pick(TYPE_NAMES[type]);
+    return Object.assign(base, { itemId: null, name: `${nm} ${ADJ[rarity]}` }); }
   give(p, it) { (this.lootByPlayer[p.id] = this.lootByPlayer[p.id] || []).push(it); }
   // обычный лут: каждый получает СВОЙ предмет одинаковой редкости и ценности
-  grantRegular(rarity, src, gemMul) { if (rarity === 'mythic' || rarity === 'divine') throw new Error('mythic/divine только с босса'); const type = this.rollType(); const k = gemMul && (type === 'gem' || type === 'material') ? gemMul : 1; for (const p of this.players) for (let j = 0; j < k; j++) this.give(p, this.mkItem(p, rarity, src, type)); if (type === 'gold') this.players.forEach(p => p.gold += Math.round(RAR[rarity].v / 5)); }
+  rates() { const c = this.catalog(); return c && c.dropRates || REAL_RATES; }
+  catalog() { return this.cfg.catalog || root.DUNGEON_CATALOG || null; }
+  // шансы для игрока p (его удача) из источника src — для честного показа в гайде
+  chances(src, p) { return pct(lootTable(src, { rates: this.rates(), tier: this.T().loot, b: luckB(p, this.cfg.luckCap) })); }
+  rollFor(p, src, u) { return this.roll(lootTable(src, { rates: this.rates(), tier: this.T().loot, b: luckB(p, this.cfg.luckCap) }), u); }
+  // обычный лут: каждый бросает СВОЮ редкость (своя удача), тип предмета общий
+  grantRegular(src, label, gemMul) { if (src === 'mythic' || src === 'divine') throw new Error('mythic/divine только с босса'); const type = this.rollType(); const k = gemMul && (type === 'gem' || type === 'material') ? gemMul : 1;
+    const u = this.rng(); // ОДИН бросок на дроп: при равной удаче у всех одна редкость; удача только сдвигает порог вверх
+    let r0 = null; for (const p of this.players) { const r = this.rollFor(p, src, u); r0 = r0 || r; for (let j = 0; j < k; j++) this.give(p, this.mkItem(p, r, label, type)); if (type === 'gold') p.gold += Math.round(RAR[r].v / 5); } return r0; }
+  mythP(p) { const R = this.rates(); return Math.min(.9, R.mythic / 100 * BOSS_MUL.mythic * this.T().myth * (1 + luckB(p, this.cfg.luckCap) * .5)); }
+  // божественный: одному случайному; удача = СРЕДНЯЯ по пачке, но не больше ×DIVINE_CAP
+  divP() { if (this.cfg.divineChance != null) return this.cfg.divineChance; const R = this.rates(), ps = this.act().length ? this.act() : this.players, avg = ps.reduce((a, p) => a + luckB(p, this.cfg.luckCap), 0) / Math.max(1, ps.length);
+    return R.divine / 100 * BOSS_MUL.divine * Math.min(DIVINE_CAP, 1 + avg * .6); }
   finish(win, reason) {
     if (this.phase === 'end') return;
     this.phase = 'end'; this.endedAt = this.t;
     const ratio = this.teamTasks.total ? this.teamTasks.done / this.teamTasks.total : 0;
-    const r2 = Math.min(1, ratio); const chest = this.roll({ uncommon: Math.max(2, 40 - 40 * r2), rare: 40 - 15 * r2, epic: 15 + 30 * r2, legendary: 2 + 28 * r2 * r2 });
-    if (this.room > 1 || win) this.grantRegular(chest, `Групповой сундук (командных задач ${this.teamTasks.done}/${this.teamTasks.total})`);
+    const r2 = Math.min(1, ratio); const chest = [0, 1, 1 + 2 * r2, 1 + 4 * r2, 1 + 8 * r2]; // групповой сундук: командные задачи поднимают редкость
+    let chestR = null; if (this.room > 1 || win) chestR = this.grantRegular(chest, `Групповой сундук (командных задач ${this.teamTasks.done}/${this.teamTasks.total})`);
     if (this.reachedBoss) {
       if (win) {
-        for (const p of this.players) if (this.rng() < Math.min(1, this.cfg.mythicOnKill * this.T().myth)) this.give(p, this.mkItem(p, 'mythic', 'Король-Лич'));
-        if (this.rng() < this.cfg.divineChance) { const cand = this.realPlayers().length ? this.realPlayers() : this.players; const w = this.pick(cand); this.give(w, this.mkItem(w, 'divine', 'Король-Лич (божественный дроп)')); this.ev(`🌟 БОЖЕСТВЕННЫЙ ПРЕДМЕТ достался ${w.name}!`, 'big'); }
+        for (const p of this.players) if (this.rng() < (this.cfg.mythicOnKill === 1 ? this.mythP(p) : Math.min(1, this.cfg.mythicOnKill * this.T().myth))) this.give(p, this.mkItem(p, 'mythic', 'Король-Лич'));
+        if (this.rng() < this.divP()) { const cand = this.realPlayers().length ? this.realPlayers() : this.players; const w = this.pick(cand); this.give(w, this.mkItem(w, 'divine', 'Король-Лич (божественный дроп)')); this.ev(`🌟 БОЖЕСТВЕННЫЙ ПРЕДМЕТ достался ${w.name}!`, 'big'); }
       } else if (this.cfg.mythicOnReach > 0) for (const p of this.players) if (this.rng() < this.cfg.mythicOnReach) this.give(p, this.mkItem(p, 'mythic', 'Король-Лич (утешительный)'));
     }
-    this.result = { win, reason, chest, ratio, teamTasks: this.teamTasks, rooms: this.history, reachedBoss: this.reachedBoss, bossKilled: this.bossKilled, durationMs: this.t - (this.startedAt || 0),
+    this.result = { win, reason, chest: chestR, ratio, teamTasks: this.teamTasks, rooms: this.history, reachedBoss: this.reachedBoss, bossKilled: this.bossKilled, durationMs: this.t - (this.startedAt || 0),
       table: this.mvpTable(), loot: this.lootByPlayer };
     this.ev(win ? '🏆 ПОБЕДА!' : `☠️ Поражение: ${reason}`, 'big');
     if (this.onEnd) try { this.onEnd(this); } catch (e) { console.error(e); }
@@ -802,7 +844,7 @@ class Run {
     const me = this.P(pid), f = this.fight;
     const v = { tier: this.tier, tierInfo: TIERS[this.tier], minPlayers: this.minPlayers(), phase: this.phase, t: this.t, code: this.code, runId: this.room, room: this.room, rooms: this.cfg.rooms, mod: this.mod ? { id: this.mod, ...MODS[this.mod] } : null, until: this.until ? this.until - this.t : 0,
       tasks: this.teamTasks, favor: this.favor, favorMax: FAVOR_MAX, revives: this.revives, divineAt: this.divineAt != null ? this.t - this.divineAt : null, events: this.events.slice(-8), me: pid,
-      players: this.players.map(p => ({ id: p.id, name: p.name, cls: p.cls, hp: Math.round(p.hp), maxHp: p.maxHp, down: !!p.downUntil, bot: p.bot, fillBot: p.fillBot, connected: p.connected, idle: !!p.idle, skin: p.skin, role: p.role, vote: this.phase === 'vote' ? p.vote : null, cards: p.cards, gold: p.gold, cd: Math.max(0, p.cdAt - this.t), buff: Object.keys(p.buff).filter(k => p.buff[k] > this.t), ready: this.phase === 'cards' ? !p.offer : null, lready: p.lready, level: p.level })) };
+      players: this.players.map(p => ({ id: p.id, name: p.name, cls: p.cls, hp: Math.round(p.hp), maxHp: p.maxHp, down: !!p.downUntil, bot: p.bot, fillBot: p.fillBot, connected: p.connected, idle: !!p.idle, skin: p.skin, luck: p.luck, role: p.role, vote: this.phase === 'vote' ? p.vote : null, cards: p.cards, gold: p.gold, cd: Math.max(0, p.cdAt - this.t), buff: Object.keys(p.buff).filter(k => p.buff[k] > this.t), ready: this.phase === 'cards' ? !p.offer : null, lready: p.lready, level: p.level })) };
     if (this.phase === 'vote') v.options = this.options;
     if (f && this.phase === 'fight') { v.fight = { curse: f.curse ? CURSES[f.curse] : null, name: f.name, boss: f.boss, bossPhase: f.bossPhase, hp: this.mod === 'dark' ? null : Math.max(0, Math.round(f.hp)), maxHp: f.maxHp, hpPct: Math.max(0, f.hp / f.maxHp), adds: Math.round(f.adds), addsMax: f.addsMax, shield: Math.round(f.shield), rage: f.rageAt - this.t, stunned: f.stunUntil > this.t, slowed: f.slowUntil > this.t, poisoned: !!(f.poison && f.poison.until > this.t), wave: f.wave, taunt: f.tauntUntil > this.t, kind: f.kind };
       if (this.fx) v.fx = this.fx;
@@ -816,7 +858,7 @@ class Run {
     return v;
   }
 }
-const api = { Run, TIERS, POTIONS, BELT_MAX, POT_CD, CURSES, LOOT_T, ITYPES, FAVOR_MAX, SKINS, normSkin, botSkin, skinPath, CLASSES, CARDS, PATHS, MODS, SHOP, RUNES, RAR, DEFAULT_CFG };
+const api = { REAL_RATES, SRC_MUL, SRC_NAME, BOSS_MUL, DIVINE_CAP, luckB, lootTable, pct, Run, TIERS, POTIONS, BELT_MAX, POT_CD, CURSES, LOOT_T, ITYPES, FAVOR_MAX, SKINS, normSkin, botSkin, skinPath, CLASSES, CARDS, PATHS, MODS, SHOP, RUNES, RAR, DEFAULT_CFG };
 if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Dungeon = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -834,7 +876,11 @@ const SKB = (window.ASSET_BASE || '') + 'skins/';
 function skUrl(path, big) { if (window.SKIN_DATA && SKIN_DATA[path]) return SKIN_DATA[path]; return SKB + (window.HIRES && !big ? path.replace(/\.webp$/, '_sm.webp') : path); }
 function preloadArt() { if (!window.HIRES || !S) return; const r = S.room || 1, L = [ART.mobs[r % ART.mobs.length], ART.mobs[(r - 1) % ART.mobs.length]]; if (r + 1 > (S.rooms || 5)) L.push(...ART.boss); (window.__pre = window.__pre || {}); for (const u of L) if (u && !__pre[u]) { const i = new Image(); i.decoding = 'async'; i.src = u; __pre[u] = i; } }
 function skinBg(cls, sk, big) { sk = sk || {}; const fb = skUrl(Dungeon.skinPath(cls, { gender: sk.gender, outfit: 'default', appearance: 'default' }), big);
-  const main = sk.url || (sk.path ? skUrl(sk.path, big) : fb); return `background-image:url('${main}'),url('${fb}')`; }
+  // ОДНА картинка: выбранный скин (раньше под ним рисовался базовый скин класса — у прозрачных скинов с крыльями было «двоение»)
+  const main = sk.url || (sk.path ? skUrl(sk.path, big) : fb), F = skFocal(cls, sk); return `background-image:url('${main}');--fx:${F[0]};--fy:${F[1]}`; }
+// фокус головы по классу (позы у скинов класса общие) + исключения для крылатых
+const FOCAL = { warrior: [.47, .22], berserker: [.5, .26], archer: [.45, .22], assassin: [.4, .26], paladin: [.49, .24] };
+function skFocal(cls, sk) { const o = sk && sk.outfit || ''; if (o.includes('archangel')) return sk.gender === 'female' ? [.46, .31] : [.5, .37]; return FOCAL[cls] || [.5, .24]; }
 function avHtml(p, extra) { return `<span class="av" data-skin="${esc((p.skin && p.skin.path) || '')}" data-g="${esc((p.skin && p.skin.gender) || '')}" style="${skinBg(p.cls, p.skin)}">${extra || ''}<em>${Dungeon.CLASSES[p.cls].icon}</em></span>`; }
 let S = null, host = null, myId = null, net = null, pend = 0, local = null, lastEv = '', screen = 'menu', lastPhase = '', lastHpPct = 1;
 let me = { name: Q.get('name') || (TG && TG.initDataUnsafe && TG.initDataUnsafe.user && TG.initDataUnsafe.user.first_name) || localStorage.getItem('tv_name') || 'Миша', cls: Q.get('cls') || localStorage.getItem('tv_cls') || 'warrior', gender: Q.get('gender') || localStorage.getItem('tv_gender') || 'male', outfit: Q.get('outfit') || localStorage.getItem('tv_outfit') || 'default', appearance: Q.get('appearance') || 'default', skinUrl: Q.get('skinUrl') || '' };
@@ -907,14 +953,18 @@ function settings() { const T = (k, n) => `<div class="tgl"><span>${n}</span><bu
 window.setT = k => { SET[k] = !SET[k]; localStorage.setItem('tv_set', JSON.stringify(SET)); settings(); };
 function leaveAsk() { modal(`<h2>Выйти?</h2><p>${S && S.phase !== 'lobby' ? 'Пачка продолжит без тебя — твоего героя поведёт бот-копия.' : 'Ты выйдешь из пачки.'}</p><div class="row"><button class="btn sec" onclick="closeModal()">Остаться</button><button class="btn" id="b-leave-yes" onclick="leaveRun()">🚪 Выйти</button></div>`); }
 function leaveRun() { noRetry = true; try { net && net.close(); } catch (e) {} location.href = location.pathname; }
-const HELP = [
-  ['Основы', 'Тапай по большой кнопке — сервер считает урон. Ничего не нужно жать одновременно: у каждой механики есть окно 4–10 с. ⏳ <b>Ярость</b> — не успели убить к таймеру → вайп.'],
-  ['Механики', '⚡ <b>Общий заряд</b> — за 5 с каждый живой тапает хоть раз → урон ×5.<br>⛓️ <b>Клетка</b> — бейте клетку 10 с; пленник жмёт «Расшатать» (+20%).<br>🔮 <b>Руны</b> — у каждого своя руна, выбери её за 4 с.'],
-  ['Роли и классы', '🎭 Роли раздаются каждую волну: Слабое место, Щит, Мобы.<br>🦸 У класса пассивка и две активки (золотые кнопки справа от ТАП), 🧪 — зелье из пояса. Ни одна механика не требует конкретного класса — идите любым составом.'],
-  ['Путь и лут', 'Перед комнатой — голосование за путь, после — 1 из 3 карт усиления. Обычный лут — у каждого свой и равный. Мифики и божественные вещи — <b>только с финального босса</b>.']];
-function help(i) { i = Math.max(0, Math.min(HELP.length - 1, i | 0)); const [t, x] = HELP[i];
-  modal(`<h2>Как играть</h2><div class="sec-t" style="text-align:center">${t}</div><p>${x}</p><div class="dots">${HELP.map((_, j) => j === i ? '●' : '○').join('')}</div>
-  <div class="row"><button class="btn sec" onclick="help(${i - 1})" ${i ? '' : 'disabled'}>‹ Назад</button>${i < HELP.length - 1 ? `<button class="btn" id="h-next" onclick="help(${i + 1})">Далее ›</button>` : '<button class="btn" onclick="closeModal()">Понятно</button>'}</div>`); }
+// короткая инструкция: один экран без прокрутки. Шансы — из реальной таблицы игры (Dungeon.REAL_RATES), удача их поднимает
+function help() { const D = Dungeon, R = D.REAL_RATES, me = S && S.players && S.players.find(p => p.id === myId), lk = me && me.luck || 0;
+  const rr = [['common', '⚪'], ['uncommon', '🟢'], ['rare', '🔵'], ['epic', '🟣'], ['legendary', '🟠'], ['mythic', '🔴'], ['divine', '✨']].map(([k, i]) => `${i} ${R[k]}%`).join(' · ');
+  const my = lk ? (() => { const c = D.pct(D.lootTable('chest', { b: D.luckB({ luck: lk }) })); return `<br>🍀 Твоя удача ${lk}%: в сундуке 🔵+ ${Math.round((c.rare + c.epic + c.legendary) * 10) / 10}% (база 14.9%).`; })() : '';
+  modal(`<h2>Как играть</h2><div class="ghelp">
+  <p>👥 <b>Лобби:</b> жми «Готов». 👑 Лидер выбирает уровень и жмёт «Старт», может исключить игрока или передать лидерство.</p>
+  <p>🗝️ <b>Уровни:</b> обычный 2–4 игрока · ⚔️ рейд 4–8 · 🌍 мировой 8–10. Чем выше, тем сильнее враги и лучше лут.</p>
+  <p>⚔️ <b>Бой:</b> тапай, жми 2 умения класса, 🧪 зелья лечат. Выполняйте механики вместе: ⚡ заряд, ⛓️ клетка, 🔮 руны. Не успели до ярости — вайп.</p>
+  <p>🗳️ <b>Пути:</b> голосуем за комнату. ⚰️ Проклятый сундук — лучше лут, но проклятие на следующую комнату.</p>
+  <p>🎲 <b>Шансы редкости (таблица игры):</b><br>${rr}<br><span class="sub">Элитки, проклятые и секретные сундуки, рейды поднимают шансы. 🔴 и ✨ — только с финального босса. 🍀 Удача героя повышает шанс редких вещей.</span>${my}</p>
+  <p>🕊️ <b>Милость богов:</b> полная шкала спасает пачку от вайпа. 📶 Отключился — герой в укрытии, зайди снова.</p></div>
+  <button class="btn" onclick="closeModal()">Понятно</button>`); }
 
 // ---------- экраны ----------
 // ---------- лобби (комната ожидания). Герой (класс/пол/скин/ник) — из сохранения игры через адаптер; в офлайн-демо — демо-герой ----------
@@ -947,7 +997,7 @@ function tierAsk() { const T = Dungeon.TIERS; modal(`<h2>Уровень подз
 function slotAct(id) { const p = S.players.find(q => q.id === id); if (!p) return; modal(`<h2>${esc(p.name)}</h2><div class="row"><button class="btn sec" id="b-sa-k" onclick="closeModal();kickAsk(${id})">✕ Исключить</button>${p.fillBot ? '' : `<button class="btn" id="b-sa-t" onclick="closeModal();transferAsk(${id})">👑 Лидер</button>`}</div>`); }
 function lobby() {
   const isHost = host === myId, P = S.players, mine = P.find(p => p.id === myId) || {}, n = P.length, rdy = P.filter(p => p.fillBot || p.lready).length, TI = S.tierInfo || Dungeon.TIERS.normal, mn = S.minPlayers || 1, all = n >= mn && rdy === n, ns = TI.max;
-  const h = `<div class="colL"><div class="lhead"><h2 class="sp">Пачка${OFFLINE ? ' · демо' : ' <span style="letter-spacing:3px">' + S.code + '</span>'}</h2><button class="ib" id="b-lmenu" aria-label="Меню" onclick="pauseMenu()">☰</button></div>
+  const h = `<div class="colL"><div class="lhead"><h2 class="sp">Пачка${OFFLINE ? ' · демо' : ' <span style="letter-spacing:3px">' + S.code + '</span>'}</h2><button class="ib" id="b-lhelp" aria-label="Как играть" onclick="help(0)">?</button><button class="ib" id="b-lmenu" aria-label="Меню" onclick="pauseMenu()">☰</button></div>
   <button class="tierc" id="b-tier" ${isHost ? 'onclick="tierAsk()"' : 'disabled'}>${TI.i} ${TI.name} · ${TI.min}–${TI.max}${isHost ? ' ▾' : ''}</button>
   <div class="sub lst">${n < mn ? 'Нужно минимум ' + mn + ' игроков · ' + n + '/' + mn : all ? (isHost ? 'Все готовы — жми «Старт»' : 'Все готовы — ждём лидера') : 'Готовы ' + rdy + '/' + n}${isHost ? ' · 👑 ты лидер' : ''}</div></div>
   <div class="colR"><div class="lpl slots grow s${ns}">${[...Array(ns).keys()].map(i => slotHtml(P[i], i, isHost)).join('')}</div>
@@ -970,7 +1020,7 @@ function demoHero() { if (!local || local.run.phase !== 'lobby') return toast('�
 window.demoApply = close => { const nm = $('#nm'); if (nm) me.name = nm.value.trim() || 'Миша';
   ['name', 'cls', 'gender', 'outfit'].forEach(k => localStorage.setItem('tv_' + k, me[k]));
   const r = local.run, p = r.P(myId); p.name = me.name.slice(0, 16); r.setClass(myId, me.cls, mySkin()); r.resetReady(); lastHtml = ''; onState(r.view(myId)); if (close) closeModal(); };
-function topBar() { return `<div id="top"><span class="pill">${S.room > S.rooms ? '👑 Босс' : '<span class="lbl">Комната </span>' + S.room + '/' + S.rooms}</span>${S.mod && S.mod.id !== 'none' ? `<button class="pill ib" aria-label="Модификатор" onclick="modInfo()">🌘<span class="lbl"> ${S.mod.name}</span></button>` : ''}<span class="sp"></span><span class="pill fav ${S.favor >= S.favorMax ? 'full' : ''}" title="Милость богов" style="--f:${S.favor || 0}%">✨${S.favor >= S.favorMax ? '' : Math.round(S.favor || 0) + '%'}</span><span class="pill">🏅 ${S.tasks.done}/${S.tasks.total}</span><span class="pill">💰 ${S.gold || 0}</span><button class="ib" id="b-menu" aria-label="Меню" onclick="pauseMenu()">☰</button></div>`; }
+function topBar() { return `<div id="top"><span class="pill">${S.room > S.rooms ? '👑 Босс' : '<span class="lbl">Комната </span>' + S.room + '/' + S.rooms}</span>${S.mod && S.mod.id !== 'none' ? `<button class="pill ib" aria-label="Модификатор" onclick="modInfo()">🌘<span class="lbl"> ${S.mod.name}</span></button>` : ''}<span class="sp"></span><span class="pill fav ${S.favor >= S.favorMax ? 'full' : ''}" title="Милость богов" style="--f:${S.favor || 0}%">✨${S.favor >= S.favorMax ? '' : Math.round(S.favor || 0) + '%'}</span><span class="pill">🏅 ${S.tasks.done}/${S.tasks.total}</span><span class="pill">💰 ${S.gold || 0}</span><button class="ib" id="b-help" aria-label="Как играть" onclick="help(2)">?</button><button class="ib" id="b-menu" aria-label="Меню" onclick="pauseMenu()">☰</button></div>`; }
 let TT = 1; function timer(ms, tot) { TT = tot; return `<div class="timer"><i id="tmr"></i></div><div class="sub" id="tmrs"></div>`; }
 let lastHtml = ''; function render(h) { const ch = h !== lastHtml; if (ch) { app.innerHTML = h; lastHtml = h; } const t = $('#tmr'); if (t) { t.style.width = Math.max(0, Math.min(100, S.until / TT * 100)) + '%'; $('#tmrs').textContent = Math.ceil(S.until / 1000) + ' с'; } if (ch) fit(); }
 // содержимое меняется на лету (роли, мобы, тексты) — если вдруг перестало влезать, сжимаем ещё на ступень
