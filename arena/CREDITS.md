@@ -16,7 +16,12 @@
 - `assets/bg.webp`: фон тронного зала из `dungeon_full_v4.zip → dungeon/public/art/bg_throne.jpg`;
 - аватары `assets/av_<класс>_<m|f>.webp`: `heroes_custom/<класс>/(female/)legendary_default.webp`.
 
-## Мужские модели (обновление)
-- **Dark Elf Rogue** (ассасин), **Minotaur Berserker** (берсерк, только бесплатные файлы: idle/walk/roll), **Human Ranger** (лучник, только бесплатные файлы: walk/knockup) — автор **hsdsz** (itch.io). Лицензия автора: использование и модификация в личных и коммерческих играх; без перепродажи/распространения исходников.
-- **Holy Judiciar FREE** (паладин) — автор **elie automata** (itch.io). Коммерческое и некоммерческое использование и модификации разрешены, требуется указание автора; без отдельной перепродажи/распространения.
-- Процедурно сгенерированы (в бесплатных версиях отсутствуют): атаки/удар/смерть у минотавра; атаки у рейнджера; всё кроме idle/walk у паладина.
+## Мужские модели (обновление, 5 ноября 2026)
+Все паки ниже бесплатные (скачаны через кнопку «Download Now» за $0, ничего не покупали). Кадры увеличены целочисленно (nearest neighbour), переведены в WebP без потерь, ноги выровнены по земле. Процедурно сгенерированных анимаций больше нет.
+
+| Класс | Пак | Автор | Ссылка | Лицензия (кратко) | Анимации |
+|---|---|---|---|---|---|
+| Берсерк | FREE Pixel art axe warrior (Blond) | Helianthus Games | https://helianthus-games.itch.io/axe-warrior | личные и коммерческие проекты, указание автора не обязательно | idle, run, jump, fall, attack, hurt, death |
+| Лучник | FREE Archer | GandalfHardcore | https://gandalfhardcore.itch.io/pixel-art-archer-character | коммерческое использование и модификация разрешены; нельзя перепродавать/распространять ассет, использовать для обучения ИИ и NFT | idle, run, shoot, hit, death, стрела |
+| Ассасин | Dark Elf Rogue (бесплатные файлы) | hsdsz | https://hsdsz.itch.io | личные и коммерческие игры, модификация; без перепродажи исходников | idle, run, jump, attack 1–13, hurt, knockdown |
+| Паладин | FREE Knight 2D Pixel Art v1.2 | Mattz Art (xzany) | https://xzany.itch.io/free-knight-2d-pixel-art | любые игровые проекты, в т.ч. коммерческие; нельзя перепродавать как ассет и NFT; указание автора приветствуется | idle, run, jump, fall, attack 1, attack 3, hurt, death, block |
