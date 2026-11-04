@@ -156,7 +156,7 @@ const A='assets/',$=id=>document.getElementById(id);
 const setH=()=>document.documentElement.style.setProperty('--h',(window.Telegram?.WebApp?.viewportStableHeight||innerHeight)+'px');addEventListener('resize',setH);setH();
 const SPR={"warrior": {"anim": {"idle": 11, "run": 8, "jump": 3, "fall": 3, "attack1": 7, "attack2": 7, "takehit": 4, "death": 11}, "cell": 180, "cx": 96, "feet": 114, "body": 51}, "assassin": {"anim": {"idle": 4, "run": 8, "jump": 2, "fall": 2, "attack1": 4, "attack2": 4, "takehit": 3, "death": 7}, "cell": 200, "cx": 97, "feet": 128, "body": 56}, "berserker": {"anim": {"idle": 10, "run": 8, "jump": 3, "fall": 3, "attack1": 7, "attack2": 9, "takehit": 3, "death": 11}, "cell": 126, "cx": 68, "feet": 82, "body": 41}, "archer": {"anim": {"idle": 10, "run": 8, "jump": 2, "fall": 2, "attack1": 6, "attack2": 6, "takehit": 3, "death": 10}, "cell": 100, "cx": 51, "feet": 67, "body": 36}, "paladin": {"anim": {"idle": 8, "run": 8, "jump": 2, "fall": 2, "attack1": 4, "attack2": 4, "takehit": 4, "death": 6}, "cell": 111, "cw": 160, "cx": 81, "feet": 105, "body": 54}};
 Object.assign(SPR,{"assassin_m":{"anim":{"idle":20,"run":9,"jump":10,"fall":10,"attack1":14,"attack2":16,"takehit":8,"death":8},"cell":212,"cw":446,"cx":222,"feet":206,"body":110,"hd":1},"berserker_m":{"anim":{"idle":6,"run":8,"jump":3,"fall":2,"attack1":13,"attack2":13,"takehit":3,"death":12},"cell":186,"cw":212,"cx":106,"feet":182,"body":128,"hd":0},"archer_m":{"anim":{"idle":5,"run":8,"jump":1,"fall":1,"attack1":11,"attack2":11,"takehit":5,"death":6},"cell":153,"cw":240,"cx":120,"feet":147,"body":129,"hd":0},"paladin_m":{"anim":{"idle":14,"run":8,"jump":3,"fall":3,"attack1":8,"attack2":11,"takehit":8,"death":15},"cell":168,"cw":240,"cx":120,"feet":162,"body":108,"hd":0}});const sk=(c,g)=>SPR[c+'_'+g]?c+'_'+g:c;
-const IMG={};for(const s in SPR)for(const a in SPR[s].anim){const im=new Image();im.src=`${A}sp/${s}_${a}.webp?v=9`;IMG[s+a]=im}
+const IMG={};for(const s in SPR)for(const a in SPR[s].anim){const im=new Image();im.src=`${A}sp/${s}_${a}.webp?v=10`;IMG[s+a]=im}
 const ARROW=new Image();ARROW.src=A+'sp/arrow.webp';const bg=new Image();bg.src=A+'bg.webp';
 const cv=$('cv'),cx=cv.getContext('2d');let W=0,H=0,G=0,SC=1,DPR=1;
 function resize(){const r=$('stage').getBoundingClientRect();if(!r.width)return;DPR=Math.min(2,devicePixelRatio||1);W=r.width;H=r.height;cv.width=W*DPR;cv.height=H*DPR;
@@ -164,15 +164,15 @@ function resize(){const r=$('stage').getBoundingClientRect();if(!r.width)return;
 addEventListener('resize',()=>{resize();drawPrev()});
 // Классы: имена и суть умений — из dungeon engine.js CLASSES, числа адаптированы под PvP
 const CLS={
- warrior:{name:'Воин',hp:116,dmg:1.424,rm:1.36,spd:1,armor:.2,crit:.08,g:['m'],pass:'Бастион: блок режет 70% урона',
+ warrior:{name:'Воин',hp:97,dmg:1.5,rm:1.18,spd:1,armor:.2,crit:.08,g:['m'],pass:'Бастион: блок режет 70% урона',
   ab:[{id:'rally',s:'Клич',n:'Боевой клич',i:'📯',cd:12,d:'щит +35'},{id:'crush',s:'Сокруш.',n:'Сокрушающий удар',i:'🔨',cd:15,d:'пробивает блок, оглушение 1.5 с'}]},
- berserker:{name:'Берсерк',hp:105,dmg:1.56,rm:0.96,spd:1.05,armor:.05,crit:.1,g:['m'],pass:'Кровавая ярость: меньше HP — больше урон (до +50%)',
+ berserker:{name:'Берсерк',hp:112,dmg:1.337,rm:0.98,spd:1.05,armor:.05,crit:.1,g:['m'],pass:'Кровавая ярость: меньше HP — больше урон (до +50%)',
   ab:[{id:'frenzy',s:'Безумие',n:'Безумие',i:'🩸',cd:14,d:'6 с урон ×1.6; цена 8% HP'},{id:'whirl',s:'Вихрь',n:'Вихрь',i:'🌪️',cd:12,d:'удар вокруг себя, отбрасывает'}]},
- archer:{name:'Лучник',hp:116,dmg:1.507,rm:1.0,spd:1.1,armor:.05,crit:.22,g:['m','f'],ranged:1,pass:'Меткость: стреляет издалека, каждый 5-й выстрел двойной',
+ archer:{name:'Лучник',hp:130,dmg:1.579,rm:1.0,spd:1.1,armor:.05,crit:.22,g:['m','f'],ranged:1,pass:'Меткость: стреляет издалека, каждый 5-й выстрел двойной',
   ab:[{id:'volley',s:'Залп',n:'Пронзающий залп',i:'🎯',cd:11,d:'веер из 5 стрел'},{id:'frost',s:'Лёд',n:'Ледяная стрела',i:'❄️',cd:14,d:'замедляет врага на 5 с'}]},
- assassin:{name:'Ассасин',hp:142,dmg:1.606,rm:1.59,spd:1.3,armor:0,crit:.3,g:['m'],pass:'Тень: 12% уклонения',
+ assassin:{name:'Ассасин',hp:120,dmg:1.678,rm:1.25,spd:1.3,armor:0,crit:.3,g:['m'],pass:'Тень: 12% уклонения',
   ab:[{id:'shadow',s:'Тень',n:'Удар из тени',i:'🌀',cd:10,d:'телепорт за спину, 4 с всё — крит'},{id:'poison',s:'Яд',n:'Отравленный клинок',i:'🧪',cd:13,d:'яд: 8% HP за 5 с'}]},
- paladin:{name:'Паладин',hp:98,dmg:1.786,rm:1.37,spd:.95,armor:.15,crit:.08,g:['m'],pass:'Свет: удары лечат на 10% от урона',
+ paladin:{name:'Паладин',hp:93,dmg:1.886,rm:1.22,spd:.95,armor:.15,crit:.08,g:['m'],pass:'Свет: удары лечат на 10% от урона',
   ab:[{id:'aegis',s:'Защита',n:'Божественная защита',i:'🌟',cd:18,d:'лечит 25% HP'},{id:'holy',s:'Св. щит',n:'Святой щит',i:'✝️',cd:20,d:'неуязвимость 2.5 с'}]}};
 const ORDER=['warrior','berserker','archer','assassin','paladin'];
 const pick=[{cls:'warrior',g:'m'},{cls:'random',g:'m'}];
