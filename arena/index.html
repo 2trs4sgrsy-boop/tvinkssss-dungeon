@@ -22,12 +22,12 @@ canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelate
 #joy{position:absolute;left:max(12px,2vw);bottom:max(12px,2vh);width:calc(var(--b)*2.3);height:calc(var(--b)*2.3);border-radius:50%;background:radial-gradient(#2a145088,#0d062088);border:2px solid #d9b25a66;z-index:2;pointer-events:none;opacity:.45;transition:opacity .12s}#joy.act{opacity:1;transition:none}#jz{position:absolute;left:0;bottom:0;width:45%;height:78%;z-index:1;touch-action:none}#app.mir #jz{left:auto;right:0}#app.spec #jz{display:none}
 #knob{position:absolute;left:50%;top:50%;width:42%;height:42%;margin:-21% 0 0 -21%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f3d58a,#9b6bff);box-shadow:0 0 14px #9b6bff;pointer-events:none}
 #joy span{position:absolute;color:#d9b25a99;font-size:calc(var(--b)*.22)}
-#btns{position:absolute;right:max(12px,2vw);bottom:max(12px,2vh);display:grid;grid-template-columns:repeat(3,var(--b));grid-template-rows:repeat(2,var(--b));gap:calc(var(--b)*.14);z-index:2}
+#btns{position:absolute;right:max(12px,2vw);bottom:max(12px,2vh);display:grid;grid-template-columns:repeat(4,var(--b));grid-template-rows:repeat(2,var(--b));gap:calc(var(--b)*.14);z-index:2}
 .bt{position:relative;border-radius:50%;border:2px solid var(--gold);background:radial-gradient(circle at 40% 30%,#4a2690,#1a0c33);color:var(--txt);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:calc(var(--b)*.36);overflow:hidden;box-shadow:0 3px 0 #0008,0 0 10px #9b6bff55}
 .bt small{font-size:calc(var(--b)*.14);color:var(--mut);margin-top:1px}
 .bt.on{transform:scale(.92);filter:brightness(1.4)}
 .bt .cd{position:absolute;inset:0;background:conic-gradient(#000b var(--p,0%),transparent 0);display:flex;align-items:center;justify-content:center;font-size:calc(var(--b)*.3);color:#fff}
-.bt.big{grid-row:span 2;grid-column:3;border-radius:calc(var(--b)*.5);background:radial-gradient(circle at 40% 30%,#c0444b,#4a0c1a)}
+.bt.big{grid-row:span 2;grid-column:4;grid-row:1/span 2;}.bt[data-k=a1]{grid-area:1/1}.bt[data-k=a2]{grid-area:1/2}.bt[data-k=hvy]{grid-area:1/3}.bt[data-k=blk]{grid-area:2/2}.bt[data-k=jmp]{grid-area:2/3}.bt.big{border-radius:calc(var(--b)*.5);background:radial-gradient(circle at 40% 30%,#c0444b,#4a0c1a)}
 #ov{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:#0d0620cc;z-index:5}
 #ov h1{margin:0;font:800 clamp(28px,7vmin,56px) Georgia,serif;color:var(--gold);text-shadow:0 0 20px #d9b25a}
 #ov button{font:700 18px system-ui;padding:12px 28px;border-radius:14px;border:2px solid var(--gold);background:var(--pur);color:#fff}
@@ -100,7 +100,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelate
 #ov p{margin:0;color:var(--txt);font-size:clamp(13px,2.2vh,18px);text-align:center;max-width:90vw}
 .lock .cls,.lock .gd{display:none}
 html,body{overscroll-behavior:none;-webkit-touch-callout:none}*{-webkit-touch-callout:none}input[type=range]{touch-action:pan-x}
-#joy,#btns{opacity:var(--bo,1)}#app.mir #joy{left:auto;right:max(12px,2vw)}#app.mir #btns{right:auto;left:max(12px,2vw)}
+#joy,#btns{opacity:var(--bo,1)}#app.mir #joy{left:auto;right:max(12px,2vw)}#app.mir #btns{right:auto;left:max(12px,2vw)}@media (max-aspect-ratio:5/4){#btns{grid-template-columns:repeat(3,var(--b));grid-template-rows:repeat(3,var(--b))}.bt.big{grid-column:3;grid-row:2/span 2}.bt[data-k=blk]{grid-area:2/1}.bt[data-k=jmp]{grid-area:2/2}#jz{width:50%;height:45%}}
 #gear{position:absolute;top:clamp(8px,1.8vh,18px);right:clamp(8px,3vw,28px);font-size:clamp(18px,3.4vh,28px);background:#1a0c33;border:1px solid #d9b25a77;border-radius:10px;color:#fff;padding:2px 8px}
 </style></head><body><div id="app"><div id="sel"><h2>⚔️ Арена 1×1 — выбор героя</h2><div class="cols">
  <div class="side"><div class="t">Ты<div class="gd" data-s="0"><button data-g="m">♂ М</button><button data-g="f">♀ Ж</button></div></div><div class="prev"><canvas id="pv0"></canvas><div class="desc" id="ds0"></div></div><div class="cls" data-s="0"></div></div>
@@ -112,16 +112,16 @@ html,body{overscroll-behavior:none;-webkit-touch-callout:none}*{-webkit-touch-ca
  <div class="pl r"><div class="av" id="av1"></div><div class="info"><div class="nm" id="n1">ИИ</div><div class="bar"><b id="hb1"></b><i id="h1"></i></div><div class="sh" id="s1"></div></div></div>
 </div>
 <div id="stage"><canvas id="cv"></canvas>
- <div id="hint">A/D — ход · W — прыжок · S — присесть · L — блок · J — удар · K — сильный · U/I — умения</div>
+ <div id="hint">A/D — ход · W/пробел — прыжок · S — присесть · L — блок · J — удар · K — сильный · U/I — умения</div>
  <div id="msg"></div><div id="emo"></div><div id="ebar"><button>👏</button><button>🔥</button><button>😂</button><button>😱</button><button>💀</button></div>
  <div id="jz"></div><div id="joy"><span style="left:50%;top:4%;transform:translateX(-50%)">▲</span><span style="left:50%;bottom:4%;transform:translateX(-50%)">⬇</span><span style="left:5%;top:50%;transform:translateY(-50%)">◀</span><span style="right:5%;top:50%;transform:translateY(-50%)">▶</span><div id="knob"></div></div>
  <div id="btns">
   <div class="bt" data-k="a1"><em id="i1">📯</em><small id="l1">Умение</small><div class="cd"></div></div>
   <div class="bt" data-k="a2"><em id="i2">🔨</em><small id="l2">Умение</small><div class="cd"></div></div>
+  <div class="bt" data-k="hvy">💥<small>Сильный</small><div class="cd"></div></div>
   <div class="bt big" data-k="atk">⚔️<small>Удар</small></div>
   <div class="bt" data-k="blk">🛡️<small>Блок</small></div>
   <div class="bt" data-k="jmp">⤴️<small>Прыжок</small></div>
-  <div class="bt" data-k="hvy">💥<small>Сильный</small><div class="cd"></div></div>
  </div>
  <div id="ov"><h1 id="res">Победа</h1><p id="resp"></p><div style="display:flex;gap:10px"><button id="ovgo">Дальше</button></div></div>
 <div id="spl">🔴 LIVE · зритель</div><button id="spbk" onclick="toMenu()">← Выйти</button>
@@ -156,7 +156,7 @@ const A='assets/',$=id=>document.getElementById(id);
 const setH=()=>document.documentElement.style.setProperty('--h',(window.Telegram?.WebApp?.viewportStableHeight||innerHeight)+'px');addEventListener('resize',setH);setH();
 const SPR={"warrior": {"anim": {"idle": 11, "run": 8, "jump": 3, "fall": 3, "attack1": 7, "attack2": 7, "takehit": 4, "death": 11}, "cell": 180, "cx": 96, "feet": 114, "body": 51}, "assassin": {"anim": {"idle": 4, "run": 8, "jump": 2, "fall": 2, "attack1": 4, "attack2": 4, "takehit": 3, "death": 7}, "cell": 200, "cx": 97, "feet": 128, "body": 56}, "berserker": {"anim": {"idle": 10, "run": 8, "jump": 3, "fall": 3, "attack1": 7, "attack2": 9, "takehit": 3, "death": 11}, "cell": 126, "cx": 68, "feet": 82, "body": 41}, "archer": {"anim": {"idle": 10, "run": 8, "jump": 2, "fall": 2, "attack1": 6, "attack2": 6, "takehit": 3, "death": 10}, "cell": 100, "cx": 51, "feet": 67, "body": 36}, "paladin": {"anim": {"idle": 8, "run": 8, "jump": 2, "fall": 2, "attack1": 4, "attack2": 4, "takehit": 4, "death": 6}, "cell": 111, "cw": 160, "cx": 81, "feet": 105, "body": 54}};
 Object.assign(SPR,{"assassin_m":{"anim":{"idle":20,"run":9,"jump":10,"fall":10,"attack1":14,"attack2":16,"takehit":8,"death":8},"cell":212,"cw":446,"cx":222,"feet":206,"body":110,"hd":1},"berserker_m":{"anim":{"idle":6,"run":8,"jump":3,"fall":2,"attack1":13,"attack2":13,"takehit":3,"death":12},"cell":186,"cw":212,"cx":106,"feet":182,"body":128,"hd":0},"archer_m":{"anim":{"idle":5,"run":8,"jump":1,"fall":1,"attack1":11,"attack2":11,"takehit":5,"death":6},"cell":153,"cw":240,"cx":120,"feet":147,"body":129,"hd":0},"paladin_m":{"anim":{"idle":14,"run":8,"jump":3,"fall":3,"attack1":8,"attack2":11,"takehit":8,"death":15},"cell":168,"cw":240,"cx":120,"feet":162,"body":108,"hd":0}});const sk=(c,g)=>SPR[c+'_'+g]?c+'_'+g:c;
-const IMG={};for(const s in SPR)for(const a in SPR[s].anim){const im=new Image();im.src=`${A}sp/${s}_${a}.webp?v=7`;IMG[s+a]=im}
+const IMG={};for(const s in SPR)for(const a in SPR[s].anim){const im=new Image();im.src=`${A}sp/${s}_${a}.webp?v=8`;IMG[s+a]=im}
 const ARROW=new Image();ARROW.src=A+'sp/arrow.webp';const bg=new Image();bg.src=A+'bg.webp';
 const cv=$('cv'),cx=cv.getContext('2d');let W=0,H=0,G=0,SC=1,DPR=1;
 function resize(){const r=$('stage').getBoundingClientRect();if(!r.width)return;DPR=Math.min(2,devicePixelRatio||1);W=r.width;H=r.height;cv.width=W*DPR;cv.height=H*DPR;
